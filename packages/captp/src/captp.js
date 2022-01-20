@@ -5,7 +5,13 @@
 
 // This logic was mostly lifted from @agoric/swingset-vat liveSlots.js
 // Defects in it are mfig's fault.
-import { Remotable, Far, makeMarshal, QCLASS } from '@endo/marshal';
+import {
+  Remotable,
+  Far,
+  makeMarshal,
+  QCLASS,
+  makeMarshalSaveError,
+} from '@endo/marshal';
 import { E, HandledPromise } from '@endo/eventual-send';
 import { isPromise, makePromiseKit } from '@endo/promise-kit';
 
@@ -114,10 +120,12 @@ export const makeCapTP = (
     // eslint-disable-next-line no-use-before-define
     convertSlotToVal,
     {
-      marshalName: `captp:${ourId}`,
-      // TODO Temporary hack.
-      // See https://github.com/Agoric/agoric-sdk/issues/2780
-      errorIdNum: 20000,
+      marshalSaveError: makeMarshalSaveError({
+        marshalName: `captp:${ourId}`,
+        // TODO Temporary hack.
+        // See https://github.com/Agoric/agoric-sdk/issues/2780
+        errorIdNum: 20000,
+      }),
     },
   );
 

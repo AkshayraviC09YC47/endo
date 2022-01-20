@@ -38,34 +38,54 @@ const defaultValToSlotFn = x => x;
 const defaultSlotToValFn = (x, _) => x;
 
 /**
+ * @param {MakeMarshalSaveErrorOptions=} options
+ * @returns {MarshalSaveError}
+ */
+export const makeMarshalSaveError = ({
+  marshalName = 'anon-marshal',
+  // TODO Temporary hack.
+  // See https://github.com/Agoric/agoric-sdk/issues/2780
+  errorIdNum = 10000,
+  // We prefer that the caller instead log to somewhere hidden
+  // to be revealed when correlating with the received error.
+  log = (fmt, err) => console.log(fmt, err),
+} = {}) => {
+  assert.typeof(marshalName, 'string');
+  const nextErrorId = () => {
+    errorIdNum += 1;
+    return `error:${marshalName}#${errorIdNum}`;
+  };
+
+  const marshalSaveError = err => {
+    // We deliberately do not share the stack, but it would
+    // be useful to log the stack locally so someone who has
+    // privileged access to the throwing Vat can correlate
+    // the problem with the remote Vat that gets this
+    // summary. If we do that, we could allocate some random
+    // identifier and include it in the message, to help
+    // with the correlation.
+    const errorId = nextErrorId();
+    assert.note(err, X`Sent as ${errorId}`);
+    log('Temporary logging of sent error', err);
+    return errorId;
+  };
+  return harden(marshalSaveError);
+};
+harden(makeMarshalSaveError);
+
+/** @type {MarshalSaveError} */
+export const marshalDontSaveError = _err => undefined;
+harden(marshalDontSaveError);
+
+/**
  * @template Slot
  * @type {MakeMarshal<Slot>}
  */
 export function makeMarshal(
   convertValToSlot = defaultValToSlotFn,
   convertSlotToVal = defaultSlotToValFn,
-  {
-    errorTagging = 'on',
-    marshalName = 'anon-marshal',
-    // TODO Temporary hack.
-    // See https://github.com/Agoric/agoric-sdk/issues/2780
-    errorIdNum = 10000,
-    // We prefer that the caller instead log to somewhere hidden
-    // to be revealed when correlating with the received error.
-    marshalSaveError = err =>
-      console.log('Temporary logging of sent error', err),
-  } = {},
+  { marshalSaveError = makeMarshalSaveError() } = {},
 ) {
-  assert.typeof(marshalName, 'string');
-  assert(
-    errorTagging === 'on' || errorTagging === 'off',
-    X`The errorTagging option can only be "on" or "off" ${errorTagging}`,
-  );
-  const nextErrorId = () => {
-    errorIdNum += 1;
-    return `error:${marshalName}#${errorIdNum}`;
-  };
-
   /**
    * @template Slot
    * @type {Serialize<Slot>}
@@ -117,30 +137,21 @@ export function makeMarshal(
      * @returns {Encoding}
      */
     const encodeError = err => {
-      if (errorTagging === 'on') {
-        // We deliberately do not share the stack, but it would
-        // be useful to log the stack locally so someone who has
-        // privileged access to the throwing Vat can correlate
-        // the problem with the remote Vat that gets this
-        // summary. If we do that, we could allocate some random
-        // identifier and include it in the message, to help
-        // with the correlation.
-        const errorId = nextErrorId();
-        assert.note(err, X`Sent as ${errorId}`);
-        marshalSaveError(err);
-        return harden({
-          [QCLASS]: 'error',
-          errorId,
-          message: `${err.message}`,
-          name: `${err.name}`,
-        });
-      } else {
+      const errorId = marshalSaveError(err);
+      if (errorId === undefined) {
         return harden({
           [QCLASS]: 'error',
           message: `${err.message}`,
           name: `${err.name}`,
         });
       }
+      assert.typeof(errorId, 'string');
+      return harden({
+        [QCLASS]: 'error',
+        errorId,
+        message: `${err.message}`,
+        name: `${err.name}`,
+      });
     };
 
     /**

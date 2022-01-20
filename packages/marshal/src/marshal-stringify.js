@@ -1,7 +1,7 @@
 // @ts-check
 /// <reference types="ses"/>
 
-import { makeMarshal } from './marshal.js';
+import { makeMarshal, marshalDontSaveError } from './marshal.js';
 
 import './types.js';
 
@@ -29,7 +29,7 @@ const badArray = harden(new Proxy(harden([]), badArrayHandler));
 const { serialize, unserialize } = makeMarshal(
   doNotConvertValToSlot,
   doNotConvertSlotToVal,
-  { errorTagging: 'off' },
+  { marshalSaveError: marshalDontSaveError },
 );
 
 /**

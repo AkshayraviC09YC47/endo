@@ -2,7 +2,7 @@ import { test } from './prepare-test-env-ava.js';
 
 import { Remotable } from '../src/make-far.js';
 import { makeTagged } from '../src/makeTagged.js';
-import { makeMarshal } from '../src/marshal.js';
+import { makeMarshal, marshalDontSaveError } from '../src/marshal.js';
 import { decodeToJustin } from '../src/marshal-justin.js';
 
 // this only includes the tests that do not use liveSlots
@@ -83,11 +83,13 @@ const fakeJustinCompartment = () => {
 };
 
 test('serialize decodeToJustin eval round trip pairs', t => {
-  const { serialize } = makeMarshal(undefined, undefined, {
+  const { serialize } = makeMarshal(
+    undefined,
+    undefined,
     // We're turning `errorTagging`` off only for the round trip tests, not in
     // general.
-    errorTagging: 'off',
-  });
+    { marshalSaveError: marshalDontSaveError },
+  );
   for (const [body, justinSrc] of jsonPairs) {
     const c = fakeJustinCompartment();
     const encoding = JSON.parse(body);
@@ -105,11 +107,13 @@ test('serialize decodeToJustin eval round trip pairs', t => {
 // that the decoder passes the extra `level` balancing diagnostic in
 // `makeYesIndenter`.
 test('serialize decodeToJustin indented eval round trip', t => {
-  const { serialize } = makeMarshal(undefined, undefined, {
+  const { serialize } = makeMarshal(
+    undefined,
+    undefined,
     // We're turning `errorTagging`` off only for the round trip tests, not in
     // general.
-    errorTagging: 'off',
-  });
+    { marshalSaveError: marshalDontSaveError },
+  );
   for (const [body] of jsonPairs) {
     const c = fakeJustinCompartment();
     const encoding = JSON.parse(body);

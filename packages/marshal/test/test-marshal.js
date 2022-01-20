@@ -4,7 +4,7 @@ import { test } from './prepare-test-env-ava.js';
 
 import { passStyleOf } from '../src/passStyleOf.js';
 
-import { makeMarshal } from '../src/marshal.js';
+import { makeMarshal, marshalDontSaveError } from '../src/marshal.js';
 import { makeTagged } from '../src/makeTagged.js';
 
 const { freeze, isFrozen, create, prototype: objectPrototype } = Object;
@@ -146,11 +146,13 @@ export const roundTripPairs = harden([
 ]);
 
 test('serialize unserialize round trip pairs', t => {
-  const { serialize, unserialize } = makeMarshal(undefined, undefined, {
+  const { serialize, unserialize } = makeMarshal(
+    undefined,
+    undefined,
     // TODO errorTagging will only be recognized once we merge with PR #2437
     // We're turning it off only for the round trip test, not in general.
-    errorTagging: 'off',
-  });
+    { marshalSaveError: marshalDontSaveError },
+  );
   for (const [plain, encoded] of roundTripPairs) {
     const { body } = serialize(plain);
     const encoding = JSON.stringify(encoded);
