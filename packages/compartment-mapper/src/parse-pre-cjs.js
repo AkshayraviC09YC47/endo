@@ -62,7 +62,11 @@ export const parsePreCjs = async (
     const require = freeze((/** @type {string} */ importSpecifier) => {
       const namespace = compartment.importNow(resolvedImports[importSpecifier]);
       if (namespace.default !== undefined) {
-        return namespace.default;
+        if (Object.keys(namespace).length > 1) {
+          return { ...namespace.default, ...namespace }; // this resembles Node's behavior more closely
+        } else {
+          return namespace.default;
+        }
       }
       return namespace;
     });
@@ -89,4 +93,10 @@ export const parsePreCjs = async (
       execute,
     },
   };
+};
+
+/** @type {import('./types.js').ParserImplementation} */
+export default {
+  parse: parsePreCjs,
+  heuristicImports: true,
 };

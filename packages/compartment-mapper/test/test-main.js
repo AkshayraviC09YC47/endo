@@ -1,4 +1,4 @@
-import 'ses';
+import '../../ses/index.js';
 import test from 'ava';
 import { loadLocation, importArchive } from '../index.js';
 import { scaffold, readPowers, setup } from './scaffold.js';
@@ -93,8 +93,9 @@ test('no dev dependencies', async t => {
         Compartment,
       });
     },
+    // TODO: relax the assertion to match any of the dev dependencies regardless of loading order
     {
-      message: /Cannot find external module "typecommon"/,
+      message: /Cannot find external module "typemodule"/,
     },
   );
 });

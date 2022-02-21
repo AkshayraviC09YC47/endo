@@ -94,6 +94,7 @@ const loadRecord = async (
       pendingJobs,
       moduleLoads,
       errors,
+      moduleSpecifier, // pass current specifier as parent specifier
     );
     setAdd(
       pendingJobs,
@@ -116,6 +117,7 @@ const loadWithoutErrorAnnotation = async (
   pendingJobs,
   moduleLoads,
   errors,
+  parentSpecifier,
 ) => {
   const { importHook, moduleMap, moduleMapHook, moduleRecords } = weakmapGet(
     compartmentPrivateFields,
@@ -156,6 +158,7 @@ const loadWithoutErrorAnnotation = async (
       pendingJobs,
       moduleLoads,
       errors,
+      parentSpecifier, // drill down with parentSpecifier unchanged
     );
     mapSet(moduleRecords, moduleSpecifier, aliasRecord);
     return aliasRecord;
@@ -165,7 +168,7 @@ const loadWithoutErrorAnnotation = async (
     return mapGet(moduleRecords, moduleSpecifier);
   }
 
-  const staticModuleRecord = await importHook(moduleSpecifier);
+  const staticModuleRecord = await importHook(moduleSpecifier, parentSpecifier);
 
   if (staticModuleRecord === null || typeof staticModuleRecord !== 'object') {
     // eslint-disable-next-line @endo/no-polymorphic-call
@@ -217,6 +220,7 @@ const memoizedLoadWithErrorAnnotation = async (
   pendingJobs,
   moduleLoads,
   errors,
+  parentSpecifier,
 ) => {
   const { name: compartmentName } = weakmapGet(
     compartmentPrivateFields,
@@ -243,6 +247,7 @@ const memoizedLoadWithErrorAnnotation = async (
       pendingJobs,
       moduleLoads,
       errors,
+      parentSpecifier,
     ),
     error => {
       // eslint-disable-next-line @endo/no-polymorphic-call

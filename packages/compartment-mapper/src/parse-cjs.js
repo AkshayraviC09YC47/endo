@@ -84,3 +84,9 @@ export const parseCjs = async (
     record: freeze({ imports, exports, reexports, execute }),
   };
 };
+
+/** @type {import('./types.js').ParserImplementation} */
+export default {
+  parse: parseCjs,
+  heuristicImports: true,
+};

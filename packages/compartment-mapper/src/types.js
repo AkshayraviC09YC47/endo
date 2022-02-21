@@ -59,6 +59,7 @@ export const moduleJSDocTypes = true;
  * @property {Language} [parser]
  * @property {string} [sha512] in base 16, hex
  * @property {string} [exit]
+ * @property {string} [deferredError]
  */
 
 /**
@@ -169,11 +170,17 @@ export const moduleJSDocTypes = true;
  */
 
 /**
+ * @callback ShouldDeferError
+ * @param {Language | undefined} language
+ * @returns {boolean}
+ */
+
+/**
  * @callback ImportHookMaker
  * @param {string} packageLocation
  * @param {string} packageName
  * @param {ParseFn} parse
- * @param {Record<string, Object>} exitModules
+ * @param {ShouldDeferError} shouldDeferError
  * @returns {ImportHook}
  */
 
@@ -188,6 +195,12 @@ export const moduleJSDocTypes = true;
  *   parser: Language,
  *   record: FinalStaticModuleType,
  * }>}
+ */
+
+/**
+ * @typedef {Object} ParserImplementation
+ * @property {boolean} heuristicImports
+ * @property {ParseFn} parse
  */
 
 /**
@@ -216,7 +229,7 @@ export const moduleJSDocTypes = true;
  */
 
 /**
- * @typedef {Record<string, ParseFn>} ParserForLanguage
+ * @typedef {Record<string, ParserImplementation>} ParserForLanguage
  */
 
 /**
@@ -255,6 +268,7 @@ export const moduleJSDocTypes = true;
 
 /**
  * @typedef {Object} ModuleSource
+ * @property {string} [deferredError] - module loading error deferred to later stage
  * @property {string} [location] - package relative location
  * @property {string} [sourceLocation] - fully qualified location
  * @property {Uint8Array} [bytes]

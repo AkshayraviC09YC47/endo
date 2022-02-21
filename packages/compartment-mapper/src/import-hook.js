@@ -5,6 +5,7 @@
 /** @typedef {import('./types.js').ReadFn} ReadFn */
 /** @typedef {import('./types.js').HashFn} HashFn */
 /** @typedef {import('./types.js').Sources} Sources */
+/** @typedef {import('./types.js').CompartmentSources} CompartmentSources */
 /** @typedef {import('./types.js').CompartmentDescriptor} CompartmentDescriptor */
 /** @typedef {import('./types.js').ImportHookMaker} ImportHookMaker */
 
@@ -56,15 +57,54 @@ export const makeImportHookMaker = (
 ) => {
   // per-assembly:
   /** @type {ImportHookMaker} */
-  const makeImportHook = (packageLocation, _packageName, parse) => {
+  const makeImportHook = (
+    packageLocation,
+    _packageName,
+    parse,
+    shouldDeferError,
+  ) => {
     // per-compartment:
     packageLocation = resolveLocation(packageLocation, baseLocation);
     const packageSources = sources[packageLocation] || {};
     sources[packageLocation] = packageSources;
     const { modules = {} } = compartments[packageLocation] || {};
 
+    /**
+     * @param {string} specifier
+     * @param {Error} error - error to throw on execute
+     * @param {string} parentSpecifier
+     * @returns {StaticModuleType}
+     */
+    const deferError = (specifier, error, parentSpecifier) => {
+      // Return a place-holder that'd throw an error if executed
+      // This allows cjs parser to more eagerly find calls to require
+      // - if parser identified a require call that's a local function, execute will never be called
+      // - if actual required module is missing, the error will happen anyway - at execution time
+      // For debugging purposes, when you need to trace the original stack to the postponed error, access the stack here:
+      // error.stack;
+      if (
+        packageSources[parentSpecifier] &&
+        !shouldDeferError(packageSources[parentSpecifier].parser)
+      ) {
+        throw error;
+      }
+
+      const record = freeze({
+        imports: [],
+        exports: [],
+        execute: () => {
+          throw error;
+        },
+      });
+      packageSources[specifier] = {
+        deferredError: error.message,
+      };
+
+      return record;
+    };
+
     /** @type {ImportHook} */
-    const importHook = async moduleSpecifier => {
+    const importHook = async (moduleSpecifier, parentSpecifier) => {
       // per-module:
 
       // In Node.js, an absolute specifier always indicates a built-in or
@@ -79,10 +119,14 @@ export const makeImportHookMaker = (
           // Archived compartments are not executed.
           return freeze({ imports: [], exports: [], execute() {} });
         }
-        throw new Error(
-          `Cannot find external module ${q(
-            moduleSpecifier,
-          )} in package ${packageLocation}`,
+        return deferError(
+          moduleSpecifier,
+          new Error(
+            `Cannot find external module ${q(
+              moduleSpecifier,
+            )} in package ${packageLocation}`,
+          ),
+          parentSpecifier,
         );
       }
 
@@ -165,13 +209,17 @@ export const makeImportHookMaker = (
         }
       }
 
-      // TODO offer breadcrumbs in the error message, or how to construct breadcrumbs with another tool.
-      throw new Error(
-        `Cannot find file for internal module ${q(
-          moduleSpecifier,
-        )} (with candidates ${candidates
-          .map(x => q(x))
-          .join(', ')}) in package ${packageLocation}`,
+      return deferError(
+        moduleSpecifier,
+        // TODO offer breadcrumbs in the error message, or how to construct breadcrumbs with another tool.
+        new Error(
+          `Cannot find file for internal module ${q(
+            moduleSpecifier,
+          )} (with candidates ${candidates
+            .map(x => q(x))
+            .join(', ')}) in package ${packageLocation}`,
+        ),
+        parentSpecifier,
       );
     };
     return importHook;

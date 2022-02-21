@@ -10,7 +10,6 @@ const fixture = new URL(
 ).toString();
 
 const assertFixture = (t, { namespace }) => {
-  console.error(namespace)
   const { assertions } = namespace;
 
   assertions.packageReferencingItself();

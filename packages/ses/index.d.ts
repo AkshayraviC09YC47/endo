@@ -79,7 +79,10 @@ export type ModuleMap = Record<string, string | ModuleExportsNamespace>;
 export type ModuleMapHook = (
   moduleSpecifier: string,
 ) => string | ModuleExportsNamespace | void;
-export type ImportHook = (moduleSpecifier: string) => Promise<StaticModuleType>;
+export type ImportHook = (
+  moduleSpecifier: string,
+  parentSpecifier: string,
+) => Promise<StaticModuleType>;
 
 export interface CompartmentOptions {
   name?: string;
