@@ -106,7 +106,11 @@ export const makeThirdPartyModuleInstance = (
     }
     // This is enough to support import * from cjs - the '*' field doesn't need to be in exports nor proxiedExports because import will only ever access it via notifiers
     notifiers['*'] = update => {
-      update(proxiedExports);
+      let flatNamespace = proxiedExports;
+      if (keys(proxiedExports).length === 1 && proxiedExports.default) {
+        flatNamespace = proxiedExports.default;
+      }
+      update(flatNamespace);
     };
   }
 
