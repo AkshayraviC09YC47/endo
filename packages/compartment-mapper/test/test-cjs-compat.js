@@ -1,5 +1,5 @@
 // import "./ses-lockdown.js";
-import '../../ses/index.js';
+import 'ses';
 import test from 'ava';
 
 import { scaffold } from './scaffold.js';

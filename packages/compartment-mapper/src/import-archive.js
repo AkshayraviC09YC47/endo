@@ -31,7 +31,7 @@ const { quote: q, details: d } = assert;
 
 const textDecoder = new TextDecoder();
 
-const freeze = Object.freeze;
+const { freeze } = Object;
 
 /** @type {Record<string, ParserImplementation>} */
 const parserForLanguage = {
@@ -49,8 +49,6 @@ const postponeErrorToExecute = errorMessage => {
   // This allows cjs parser to more eagerly find calls to require
   // - if parser identified a require call that's a local function, execute will never be called
   // - if actual required module is missing, the error will happen anyway - at execution time
-  // For debugging purposes, when you need to trace the original stack to the postponed error, try this:
-  // Error.captureStackTrace(error)
 
   const record = freeze({
     imports: [],
