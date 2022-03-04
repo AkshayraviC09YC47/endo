@@ -9,9 +9,15 @@ import { makeAtomicsTrapGuest, makeAtomicsTrapHost } from '../src/atomics.js';
 
 const { details: X } = assert;
 
+/**
+ * @param {typeof Far} makeTrapHandler
+ */
 export const createHostBootstrap = makeTrapHandler => {
   // Create a remotable that has a syncable return value.
   return Far('test traps', {
+    /**
+     * @param {number} n
+     */
     getTraps(n) {
       return makeTrapHandler('getNTraps', {
         getN() {
@@ -25,14 +31,21 @@ export const createHostBootstrap = makeTrapHandler => {
   });
 };
 
+/**
+ *
+ * @param {{ is(a: any, b: any): void, throws(a: any, spec: any): void}} t
+ * @param {import('../src/ts-types').Trap} Trap
+ * @param {ReturnType<typeof createHostBootstrap>} bs
+ * @param {boolean} unwrapsPromises
+ */
 export const runTrapTests = async (t, Trap, bs, unwrapsPromises) => {
   // Demonstrate async compatibility of traps.
   const pn = E(E(bs).getTraps(3)).getN();
   t.is(Promise.resolve(pn), pn);
   t.is(await pn, 3);
 
-  // Demonstrate Trap cannot be used on a promise.
   const ps = E(bs).getTraps(4);
+  // @ts-expect-error - Trap cannot be used on a promise
   t.throws(() => Trap(ps).getN(), {
     instanceOf: Error,
     message: /target cannot be a promise/,

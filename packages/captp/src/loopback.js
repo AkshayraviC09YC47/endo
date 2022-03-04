@@ -6,7 +6,7 @@ export { E };
 
 /**
  * @template T
- * @typedef {import('@endo/eventual-send').ERef<T>} ERef
+ * @typedef {import('@endo/eventual-send').Remote<T>} Remote
  */
 
 /**
@@ -14,9 +14,9 @@ export { E };
  *
  * @param {string} ourId
  * @returns {{
- *   makeFar<T>(x: T): ERef<T>,
- *   makeNear<T>(x: T): ERef<T>,
- *   makeTrapHandler<T>(x: T): T,
+ *   makeFar<T>(x: T): Remote<T>,
+ *   makeNear<T>(x: T): Remote<T>,
+ *   makeTrapHandler: typeof Far,
  *   Trap: Trap
  * }}
  */
@@ -78,7 +78,7 @@ export const makeLoopback = ourId => {
   const nearGetter = E.get(getNearBootstrap()).refGetter;
 
   /**
-   * @param {ERef<{ getRef(nonce: number): any }>} refGetter
+   * @param {Remote<{ getRef(nonce: number): any }>} refGetter
    */
   const makeRefMaker = refGetter =>
     /**

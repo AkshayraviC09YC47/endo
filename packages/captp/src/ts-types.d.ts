@@ -1,34 +1,34 @@
+// @ts-check
 /* eslint-disable */
-// eslint-disable-next-line spaced-comment
 
-import type { Unpromise } from '@endo/eventual-send';
+import type { Callable, DataOnly, FunctionOnly, Remotable } from '@endo/eventual-send';
 
 /**
  * In order to type using Trap with a handler TrapHandler<T>, this template type
  * examines its parameter, and transforms any Promise<R> function return types
  * or Promise<R> object property types into the corresponding resolved type R.
  *
- * That correctly describes that Trap(target)... "unpromises" any results.
+ * That correctly describes that Trap(target)... "awaits" any results.
  */
 export type TrapHandler<T> = T extends (...args: infer P) => infer R
-  ? (...args: P) => Unpromise<R>
-  : T extends Record<string | number | symbol, Function>
+  ? (...args: P) => Awaited<R>
+  : T extends Record<string | number | symbol, Callable>
   ? {
-      [K in keyof T]: Unpromise<T[K]>;
+      [K in keyof T]: Awaited<T[K]>;
     }
   : T;
 
 /* Types for Trap proxy calls. */
 type TrapSingleMethod<T> = {
-  readonly [P in keyof T]: (
+  readonly [P in keyof T]: T[P] extends Callable ? (
     ...args: Parameters<T[P]>
-  ) => Unpromise<ReturnType<T[P]>>;
+  ) => Awaited<ReturnType<T[P]>> : never;
 }
-type TrapSingleCall<T> = T extends Function ?
-  ((...args: Parameters<T>) => Unpromise<ReturnType<T>>) &
-    ESingleMethod<Required<T>> : ESingleMethod<Required<T>>;
+type TrapSingleCall<T> = T[P] extends Callable ?
+  ((...args: Parameters<T>) => Awaited<ReturnType<T>>) &
+    TrapSingleMethod<Required<T>> : TrapSingleMethod<Required<T>>;
 type TrapSingleGet<T> = {
-  readonly [P in keyof T]: Unpromise<T[P]>;
+  readonly [P in keyof T]: Awaited<T[P]>;
 }
 
 export interface Trap {
@@ -41,9 +41,15 @@ export interface Trap {
    * caller.
    *
    * @param {T} x target for method/function call
-   * @returns {TrapSingleCall<Unpromise<T>>} method/function call proxy
+   * @returns {TrapSingleCall} method/function call proxy
    */
-  <T>(x: T): TrapSingleCall<Unpromise<T>>;
+  <T>(x: T): TrapSingleCall<
+    T extends Remotable<infer U>
+      ? FunctionOnly<U>
+      : T extends Awaited<infer U>
+      ? FunctionOnly<T>
+      : never
+  >;
 
   /**
    * @template T
@@ -54,7 +60,13 @@ export interface Trap {
    * of this caller.
    *
    * @param {T} x target for property get
-   * @returns {TrapSingleGet<Unpromise<T>>} property get proxy
+   * @returns {TrapSingleGet} property get proxy
    */
-  readonly get<T>(x: T): TrapSingleGet<Unpromise<T>>;
+  readonly get<T>(x: T): TrapSingleGet<
+    T extends Remotable<infer U>
+      ? DataOnly<U>
+      : T extends Awaited<infer U>
+      ? DataOnly<U>
+      : never
+  >;
 }

@@ -585,6 +585,7 @@ export const makeCapTP = (
     dispatch({ type: 'CTP_DISCONNECT', epoch, reason });
   };
 
+  /** @type {typeof Far} */
   const makeTrapHandler = (name, obj) => {
     const far = Far(name, obj);
     exportedTrapHandlers.add(far);
